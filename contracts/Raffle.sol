@@ -1,8 +1,8 @@
 /**
  * Raffle smart contract
  * 1. Enter the raffle by paying the set amount.
- * 2. Pick a random winner from the participants.
- * 3. Winner is selected every X minutes.
+ * 2. Pick a random winner from the participants using Chainlink VRF V2.
+ * 3. Winner is selected every X minutes using Chainlink Keepers/Automation.
  */
 
 // SPDX-License-Identifier: MIT
@@ -17,6 +17,12 @@ error Raffle__TransferFailed();
 error Raffle__UpkeepNotNeeded(uint256 currentBalance, uint256 numPlayers, uint256 raffleState);
 error Raffle__RaffleNotOpen();
 
+/**
+ * @title Raffle Smart Contract
+ * @author Dev Nepenthe
+ * @notice This contract is for creating a raffle smart contract.
+ * @dev This implements Chainlink VRF V2 and Automation-compatible contracts
+ */
 contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
     /* Type Declarations */
     enum RaffleState {
@@ -76,6 +82,17 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
         emit RaffleEnter(msg.sender);
     }
 
+    /**
+     * @dev checkData type converted from calldata originally to type memory
+     * due to invalid implicit conversion from string to calldata.
+     * @dev The following should be true for upkeepNeeded to be true:
+     * 1. Raffle is open for players to enter.
+     * 2. The contract has balance.
+     * 3. There are players in the raffle.
+     * 4. Enough time has passed.
+     * 5. Subscription is funded with LINK (implicit).
+     * @return upkeepNeeded bool. Triggers performUpkeep function when True.
+     */
     function checkUpkeep(
         bytes memory /* checkData */
     ) public view override returns (bool upkeepNeeded, bytes memory /* performData */) {
@@ -88,6 +105,10 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
         return (upkeepNeeded, "0x0");
     }
 
+    /**
+     * @dev Triggered once checkUpkeep returns True.
+     * Kicks off Chainlink VRF call to request random winner (number).
+     */
     function performUpkeep(bytes calldata /* performData */) external override {
         (bool upkeepNeeded, ) = checkUpkeep("");
         if (!upkeepNeeded) {
@@ -109,6 +130,10 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
         emit RequestRandomWinner(requestId);
     }
 
+    /**
+     * @dev This is the Chainlink VRF response implemented in the contract.
+     * In this contract, it sends the contract balance to the random winner.
+     */
     function fulfillRandomWords(
         uint256 /* requestId */,
         uint256[] memory randomWords
