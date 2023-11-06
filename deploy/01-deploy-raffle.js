@@ -45,6 +45,11 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         waitConfirmations: network.config.blockConfirmations || 1, // when on hardhat, >1 waitConfirmations takes forever
     });
 
+    // VRFCoordinatorV2Mock update now requires consuming contract to be added as consumer
+    if (devChains.includes(network.name)) {
+        await vrfCoordinatorV2Mock.addConsumer(subscriptionId, raffle.address);
+    }
+
     if (!devChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
         await verify(raffle.target, args);
     }
