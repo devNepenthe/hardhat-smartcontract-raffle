@@ -73,7 +73,7 @@ const { boolean } = require("hardhat/internal/core/params/argumentTypes");
                   await raffle.enterRaffle({ value: entranceFee });
                   await network.provider.send("evm_increaseTime", [Number(interval) + 1]);
                   await network.provider.send("evm_mine", []);
-                  await raffle.checkUpkeep("0x");
+                  //   await raffle.checkUpkeep("0x"); /** this is not necessary */
                   await raffle.performUpkeep("0x");
 
                   await expect(
@@ -92,6 +92,25 @@ const { boolean } = require("hardhat/internal/core/params/argumentTypes");
                       raffle,
                       "RaffleEnter",
                   );
+              });
+          });
+
+          describe("checkUpkeep", function () {
+              it("upkeepNeeded returns false when not enough time has passed.", async function () {
+                  await raffle.enterRaffle({ value: entranceFee });
+                  await network.provider.send("evm_increaseTime", [Number(interval) - 2]);
+                  await network.provider.send("evm_mine", []);
+                  /** Note:
+                   * Since our checkUpkeep() function is a view function
+                   * .staticCall(args) is not necessary
+                   * If it wasn't like originally showcased, not using staticCall:
+                   * 1. returns upkeepNeeded as undefined
+                   * 2. sends a transaction, which we do not want if we only
+                   *    intend to check the value of upkeepNeeded
+                   */
+                  const { upkeepNeeded } = await raffle.checkUpkeep.staticCall("0x");
+
+                  assert(!upkeepNeeded);
               });
           });
       });
