@@ -14,6 +14,8 @@ const { boolean } = require("hardhat/internal/core/params/argumentTypes");
               deployer = (await getNamedAccounts()).deployer;
               raffle = await ethers.getContract("Raffle", deployer);
               vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock", deployer);
+              entranceFee = await raffle.getEntranceFee();
+              interval = await raffle.getInterval();
           });
 
           describe("constructor", function () {
@@ -33,8 +35,7 @@ const { boolean } = require("hardhat/internal/core/params/argumentTypes");
               });
 
               it("initialized the update interval correctly.", async function () {
-                  const interval = (await raffle.getInterval()).toString();
-                  assert.equal(interval, networkConfig[chainId]["updateInterval"]);
+                  assert.equal(interval.toString(), networkConfig[chainId]["updateInterval"]);
               });
 
               it("initializes the raffleState correctly.", async function () {
@@ -57,6 +58,40 @@ const { boolean } = require("hardhat/internal/core/params/argumentTypes");
               it("sets the subId correctly.", async function () {
                   const subId = (await raffle.getSubId()).toString();
                   assert.equal(subId, (await deployments.get("Raffle")).args[3].toString());
+              });
+          });
+
+          describe("enterRaffle", function () {
+              it("reverts when entering with ETH below minimum amount.", async function () {
+                  await expect(raffle.enterRaffle()).to.be.revertedWithCustomError(
+                      raffle,
+                      "Raffle__NotEnoughETH",
+                  );
+              });
+
+              it("reverts when raffle is not open.", async function () {
+                  await raffle.enterRaffle({ value: entranceFee });
+                  await network.provider.send("evm_increaseTime", [Number(interval) + 1]);
+                  await network.provider.send("evm_mine", []);
+                  await raffle.checkUpkeep("0x");
+                  await raffle.performUpkeep("0x");
+
+                  await expect(
+                      raffle.enterRaffle({ value: entranceFee }),
+                  ).to.be.revertedWithCustomError(raffle, "Raffle__RaffleNotOpen");
+              });
+
+              it("records raffle participants.", async function () {
+                  await raffle.enterRaffle({ value: entranceFee });
+                  const player = await raffle.getPlayer(0);
+                  assert.equal(player, deployer);
+              });
+
+              it("emits event upon entry.", async function () {
+                  await expect(raffle.enterRaffle({ value: entranceFee })).to.emit(
+                      raffle,
+                      "RaffleEnter",
+                  );
               });
           });
       });
