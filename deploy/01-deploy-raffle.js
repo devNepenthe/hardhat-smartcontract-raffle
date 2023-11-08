@@ -1,5 +1,6 @@
 const { network, ethers } = require("hardhat");
 const { networkConfig, devChains } = require("../helper-hardhat-config");
+const { verify } = require("../utils/verify");
 
 const FUND_AMOUNT = ethers.parseEther("2");
 
@@ -25,7 +26,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         await vrfCoordinatorV2Mock.fundSubscription(subscriptionId, FUND_AMOUNT);
     } else {
         vrfCoordinatorV2Address = networkConfig[chainId]["vrfCoordinator"];
-        subscriptionId = "0";
+        subscriptionId = networkConfig[chainId]["subscriptionId"];
     }
 
     const args = [
@@ -51,7 +52,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     }
 
     if (!devChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        await verify(raffle.target, args);
+        await verify(raffle.address, args);
     }
 
     log("------------------------------------------");
