@@ -144,4 +144,42 @@ const { boolean } = require("hardhat/internal/core/params/argumentTypes");
                   assert(upkeepNeeded);
               });
           });
+
+          describe("performUpkeep", function () {
+              it("reverts when upkeepNeeded is false.", async function () {
+                  await expect(raffle.performUpkeep("0x")).to.be.revertedWithCustomError(
+                      raffle,
+                      "Raffle__UpkeepNotNeeded",
+                  );
+              });
+
+              it("triggers only when upkeepNeeded is true.", async function () {
+                  await raffle.enterRaffle({ value: entranceFee });
+                  await network.provider.send("evm_increaseTime", [Number(interval) + 1]);
+                  await network.provider.send("evm_mine", []);
+                  const txResponse = raffle.performUpkeep("0x");
+
+                  assert(txResponse);
+              });
+
+              it("updates the raffle state.", async function () {
+                  await raffle.enterRaffle({ value: entranceFee });
+                  await network.provider.send("evm_increaseTime", [Number(interval) + 1]);
+                  await network.provider.send("evm_mine", []);
+                  await raffle.performUpkeep("0x");
+
+                  assert.equal((await raffle.getRaffleState()).toString(), "1");
+              });
+
+              it("emits an event and returns a request id.", async function () {
+                  await raffle.enterRaffle({ value: entranceFee });
+                  await network.provider.send("evm_increaseTime", [Number(interval) + 1]);
+                  await network.provider.send("evm_mine", []);
+                  const txResponse = await raffle.performUpkeep("0x");
+                  const txReceipt = await txResponse.wait(1);
+
+                  const requestId = txReceipt.logs[1].args.requestId;
+                  assert(Number(requestId) > 0);
+              });
+          });
       });
