@@ -1,7 +1,6 @@
 const { deployments, ethers, getNamedAccounts, network } = require("hardhat");
 const { assert, expect } = require("chai");
 const { devChains, networkConfig } = require("../../helper-hardhat-config");
-const { boolean } = require("hardhat/internal/core/params/argumentTypes");
 
 !devChains.includes(network.name)
     ? describe.skip
