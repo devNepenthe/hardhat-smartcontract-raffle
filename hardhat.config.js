@@ -21,7 +21,8 @@ module.exports = {
             url: SEPOLIA_RPC_URL,
             accounts: [PRIVATE_KEY],
             chainId: 11155111,
-            blockConfirmations: 6,
+            blockConfirmations: 3,
+            saveDeployments: true,
         },
         localhost: {
             url: "http://127.0.0.1:8545/",
@@ -43,7 +44,7 @@ module.exports = {
         apiKey: ETHERSCAN_API_KEY,
     },
     gasReporter: {
-        enabled: false,
+        enabled: true,
         outputFile: "gas-report.txt",
         noColors: true,
         currency: "USD",
@@ -52,5 +53,9 @@ module.exports = {
     },
     mocha: {
         timeout: 300000,
+    },
+    contractSizer: {
+        runOnCompile: false,
+        only: ["Raffle"],
     },
 };
