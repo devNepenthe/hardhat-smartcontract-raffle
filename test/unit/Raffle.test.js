@@ -98,7 +98,7 @@ const { boolean } = require("hardhat/internal/core/params/argumentTypes");
           describe("checkUpkeep", function () {
               it("upkeepNeeded returns false when not enough time has passed.", async function () {
                   await raffle.enterRaffle({ value: entranceFee });
-                  await network.provider.send("evm_increaseTime", [Number(interval) - 2]); // using 1 fails because there's another block for addConsumer after raffle deployment
+                  await network.provider.send("evm_increaseTime", [Number(interval) - 3]);
                   await network.provider.send("evm_mine", []);
                   /** Note:
                    * Since our checkUpkeep() function is a view function
